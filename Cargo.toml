@@ -1,0 +1,22 @@
+[package]
+name = "bevy_vox"
+version = "0.1.0"
+authors = ["erasin <erasinoo@gmail.com>"]
+edition = "2018"
+description = "Load MagicaVoxel Vox file for bevy engine "
+license = "MIT"
+repository = "https://github.com/erasin/bevy_vox"
+documentation = "https://docs.rs/bevy_vox"
+readme = "README.md"
+keywords = ['voxel', 'MagicaVoxel', 'game', 'bevy']
+
+[dependencies]
+bevy_app = "0.2"
+bevy_asset = "0.2"
+bevy_render = "0.2"
+anyhow = "1.0"
+thiserror = "1.0"
+dot_vox = "4.1"
+
+[dev-dependencies]
+bevy = "*"
