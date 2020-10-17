@@ -9,6 +9,7 @@ repository = "https://github.com/erasin/bevy_vox"
 documentation = "https://docs.rs/bevy_vox"
 readme = "README.md"
 keywords = ['voxel', 'MagicaVoxel', 'game', 'bevy']
+exclude = ["assets", "examples"]
 
 [dependencies]
 bevy_app = "0.2"
