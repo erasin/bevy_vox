@@ -12,12 +12,20 @@ keywords = ['voxel', 'MagicaVoxel', 'game', 'bevy']
 exclude = ["assets", "examples"]
 
 [dependencies]
-bevy_app = "0.2"
-bevy_asset = "0.2"
-bevy_render = "0.2"
+bevy_ecs = { git = "https://github.com/bevyengine/bevy" }
+bevy_app = { git = "https://github.com/bevyengine/bevy" }
+bevy_asset = { git = "https://github.com/bevyengine/bevy" }
+bevy_render = { git = "https://github.com/bevyengine/bevy" }
+bevy_utils = { git = "https://github.com/bevyengine/bevy" }
+bevy_pbr = { git = "https://github.com/bevyengine/bevy" }
+bevy_scene = { git = "https://github.com/bevyengine/bevy" }
+bevy_transform = { git = "https://github.com/bevyengine/bevy" }
+bevy_math = { git = "https://github.com/bevyengine/bevy" }
+
+
 anyhow = "1.0"
 thiserror = "1.0"
 dot_vox = "4.1"
 
 [dev-dependencies]
-bevy = "0.2"
+bevy = { git = "https://github.com/bevyengine/bevy" }

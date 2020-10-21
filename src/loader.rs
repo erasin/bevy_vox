@@ -1,21 +1,31 @@
 use anyhow::Result;
-use bevy_asset::AssetLoader;
-use bevy_render::color::Color;
+use bevy_asset::{AssetLoader, AssetPath, LoadContext, LoadedAsset};
+use bevy_ecs::{World, WorldBuilderSource};
+use bevy_math::Vec3;
+use bevy_pbr::prelude::{PbrComponents, StandardMaterial};
 use bevy_render::{
-    mesh::{Mesh, VertexAttribute},
-    pipeline::PrimitiveTopology,
+    color::Color,
+    mesh::{shape::Cube, Mesh},
 };
+use bevy_scene::Scene;
+use bevy_transform::{
+    hierarchy::BuildWorldChildren,
+    prelude::{GlobalTransform, Transform},
+};
+use bevy_utils::BoxedFuture;
 use dot_vox::DotVoxData;
-use std::path::Path;
 use thiserror::Error;
 
 #[derive(Default)]
 pub struct VoxLoader;
 
-impl AssetLoader<Mesh> for VoxLoader {
-    fn from_bytes(&self, _asset_path: &Path, bytes: Vec<u8>) -> Result<Mesh> {
-        let mesh = load_vox(bytes)?;
-        Ok(mesh)
+impl AssetLoader for VoxLoader {
+    fn load<'a>(
+        &'a self,
+        bytes: &'a [u8],
+        load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, Result<()>> {
+        Box::pin(async move { Ok(load_vox(bytes, load_context).await?) })
     }
 
     fn extensions(&self) -> &[&str] {
@@ -30,122 +40,84 @@ pub enum VoxError {
     FailErr(String),
 }
 
-fn load_vox(bytes: Vec<u8>) -> Result<Mesh, VoxError> {
-    // let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+async fn load_vox<'a, 'b>(
+    bytes: &'a [u8],
+    load_context: &'a mut LoadContext<'b>,
+) -> Result<(), VoxError> {
+    let mut world = World::default();
+    let world_builder = &mut world.build();
 
-    let data = match dot_vox::load_bytes(&bytes) {
+    let data: DotVoxData = match dot_vox::load_bytes(&bytes) {
         Ok(d) => d,
         Err(e) => {
             return Err(VoxError::FailErr(e.to_string()));
         }
     };
 
-    load_node(data)
-}
-
-// use bevy_render::mesh::shape::Cube;
-
-fn load_node(data: DotVoxData) -> Result<Mesh, VoxError> {
     let size = 0.5;
 
-    let vertices_one = &[
-        // top (0., 0., size)
-        ([-size, -size, size], [0., 0., size], [0., 0.]),
-        ([size, -size, size], [0., 0., size], [size, 0.]),
-        ([size, size, size], [0., 0., size], [size, size]),
-        ([-size, size, size], [0., 0., size], [0., size]),
-        // bottom (0., 0., -size)
-        ([-size, size, -size], [0., 0., -size], [size, 0.]),
-        ([size, size, -size], [0., 0., -size], [0., 0.]),
-        ([size, -size, -size], [0., 0., -size], [0., size]),
-        ([-size, -size, -size], [0., 0., -size], [size, size]),
-        // right (size, 0., 0.)
-        ([size, -size, -size], [size, 0., 0.], [0., 0.]),
-        ([size, size, -size], [size, 0., 0.], [size, 0.]),
-        ([size, size, size], [size, 0., 0.], [size, size]),
-        ([size, -size, size], [size, 0., 0.], [0., size]),
-        // left (-size, 0., 0.)
-        ([-size, -size, size], [-size, 0., 0.], [size, 0.]),
-        ([-size, size, size], [-size, 0., 0.], [0., 0.]),
-        ([-size, size, -size], [-size, 0., 0.], [0., size]),
-        ([-size, -size, -size], [-size, 0., 0.], [size, size]),
-        // front (0., size, 0.)
-        ([size, size, -size], [0., size, 0.], [size, 0.]),
-        ([-size, size, -size], [0., size, 0.], [0., 0.]),
-        ([-size, size, size], [0., size, 0.], [0., size]),
-        ([size, size, size], [0., size, 0.], [size, size]),
-        // back (0., -size, 0.)
-        ([size, -size, size], [0., -size, 0.], [0., 0.]),
-        ([-size, -size, size], [0., -size, 0.], [size, 0.]),
-        ([-size, -size, -size], [0., -size, 0.], [size, size]),
-        ([size, -size, -size], [0., -size, 0.], [0., size]),
-    ];
+    let mut color_use: Vec<usize> = Vec::new();
 
-    let vertices = data.models[0]
-        .voxels
-        .iter()
-        .flat_map(|voxel| {
-            vertices_one
-                .iter()
-                .map(|(p, n, v)| {
-                    (
-                        [
-                            voxel.x as f32 + p[0],
-                            voxel.y as f32 + p[1],
-                            voxel.z as f32 + p[2],
-                        ],
-                        *n,
-                        *v,
-                    )
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
-
-    let mut positions = Vec::new();
-    let mut normals = Vec::new();
-    let mut uvs = Vec::new();
-    for (position, normal, uv) in vertices.iter() {
-        positions.push(*position);
-        normals.push(*normal);
-        uvs.push(*uv);
+    for model in data.models.iter() {
+        for vox in model.voxels.iter() {
+            let index = vox.i as usize;
+            if !color_use.contains(&index) {
+                color_use.push(index);
+            }
+        }
     }
 
-    let indices_one: Vec<u32> = vec![
-        0, 1, 2, 2, 3, 0, // top
-        4, 5, 6, 6, 7, 4, // bottom
-        8, 9, 10, 10, 11, 8, // right
-        12, 13, 14, 14, 15, 12, // left
-        16, 17, 18, 18, 19, 16, // front
-        20, 21, 22, 22, 23, 20, // back
-    ];
+    for (index, palette) in data.palette.iter().enumerate() {
+        if color_use.contains(&index) {
+            let color = palette_to_color(*palette);
+            let palette_label = palette_label(index);
+            load_context.set_labeled_asset(
+                &palette_label,
+                LoadedAsset::new(StandardMaterial {
+                    albedo: color,
+                    ..Default::default()
+                }),
+            );
+        }
+    }
 
-    let indices = data.models[0]
-        .voxels
-        .iter()
-        .enumerate()
-        .flat_map(|(i, _voxel)| {
-            indices_one
-                .iter()
-                .map(|indice| i as u32 * 24 + indice)
-                .collect::<Vec<_>>()
-        })
-        .collect();
+    let mesh: Mesh = Mesh::from(Cube { size });
+    load_context.set_labeled_asset("cube", LoadedAsset::new(mesh));
 
-    let m = Mesh {
-        primitive_topology: PrimitiveTopology::TriangleList,
-        attributes: vec![
-            VertexAttribute::position(positions),
-            VertexAttribute::normal(normals),
-            VertexAttribute::uv(uvs),
-        ],
-        indices: Some(indices),
-    };
+    for model in data.models.iter() {
+        world_builder
+            .spawn((Transform::default(), GlobalTransform::default()))
+            .with_children(|parent| {
+                for vox in model.voxels.iter() {
+                    let vox_asset_path = AssetPath::new_ref(load_context.path(), Some("cube"));
 
-    Ok(m)
+                    let material_label = palette_label(vox.i as usize);
+                    let material_asset_path =
+                        AssetPath::new_ref(load_context.path(), Some(&material_label));
+
+                    parent.spawn(PbrComponents {
+                        mesh: load_context.get_handle(vox_asset_path),
+                        material: load_context.get_handle(material_asset_path),
+                        transform: Transform::from_translation(Vec3::new(
+                            vox.x as f32,
+                            vox.y as f32,
+                            vox.z as f32,
+                        )),
+                        ..Default::default()
+                    });
+                }
+            });
+    }
+
+    load_context.set_default_asset(LoadedAsset::new(Scene::new(world)));
+
+    Ok(())
 }
 
-#[allow(dead_code)]
+fn palette_label(index: usize) -> String {
+    format!("palette{}", index)
+}
+
 fn palette_to_color(from: u32) -> Color {
     let (a, b, g, r) = (
         from >> 24u32 & 0xFF,
