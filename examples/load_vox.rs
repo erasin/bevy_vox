@@ -3,7 +3,7 @@ use bevy_vox::*;
 
 fn main() {
     App::build()
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_plugin(VoxPlugin)
         .add_startup_system(setup.system())
         .run();
