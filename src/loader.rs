@@ -2,7 +2,7 @@ use anyhow::Result;
 use bevy_asset::{AssetLoader, AssetPath, LoadContext, LoadedAsset};
 use bevy_ecs::{World, WorldBuilderSource};
 use bevy_math::Vec3;
-use bevy_pbr::prelude::{PbrComponents, StandardMaterial};
+use bevy_pbr::prelude::{PbrBundle, StandardMaterial};
 use bevy_render::{
     color::Color,
     mesh::{shape::Cube, Mesh},
@@ -54,7 +54,7 @@ async fn load_vox<'a, 'b>(
         }
     };
 
-    let size = 0.5;
+    let size = 1.0;
 
     let mut color_use: Vec<usize> = Vec::new();
 
@@ -95,7 +95,7 @@ async fn load_vox<'a, 'b>(
                     let material_asset_path =
                         AssetPath::new_ref(load_context.path(), Some(&material_label));
 
-                    parent.spawn(PbrComponents {
+                    parent.spawn(PbrBundle {
                         mesh: load_context.get_handle(vox_asset_path),
                         material: load_context.get_handle(material_asset_path),
                         transform: Transform::from_translation(Vec3::new(
