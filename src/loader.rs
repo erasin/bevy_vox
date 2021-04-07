@@ -1,6 +1,6 @@
 use anyhow::Result;
 use bevy_asset::{AssetLoader, AssetPath, LoadContext, LoadedAsset};
-use bevy_ecs::{World, WorldBuilderSource};
+use bevy_ecs::world::World;
 use bevy_math::Vec3;
 use bevy_pbr::prelude::{PbrBundle, StandardMaterial};
 use bevy_render::{
@@ -45,7 +45,7 @@ async fn load_vox<'a, 'b>(
     load_context: &'a mut LoadContext<'b>,
 ) -> Result<(), VoxError> {
     let mut world = World::default();
-    let world_builder = &mut world.build();
+    // let world_builder = &mut world.build();
 
     let data: DotVoxData = match dot_vox::load_bytes(&bytes) {
         Ok(d) => d,
@@ -74,7 +74,7 @@ async fn load_vox<'a, 'b>(
             load_context.set_labeled_asset(
                 &palette_label,
                 LoadedAsset::new(StandardMaterial {
-                    albedo: color,
+                    base_color: color,
                     ..Default::default()
                 }),
             );
@@ -85,8 +85,9 @@ async fn load_vox<'a, 'b>(
     load_context.set_labeled_asset("cube", LoadedAsset::new(mesh));
 
     for model in data.models.iter() {
-        world_builder
-            .spawn((Transform::default(), GlobalTransform::default()))
+        world
+            .spawn()
+            .insert_bundle((Transform::identity(), GlobalTransform::identity()))
             .with_children(|parent| {
                 for vox in model.voxels.iter() {
                     let vox_asset_path = AssetPath::new_ref(load_context.path(), Some("cube"));
@@ -95,7 +96,7 @@ async fn load_vox<'a, 'b>(
                     let material_asset_path =
                         AssetPath::new_ref(load_context.path(), Some(&material_label));
 
-                    parent.spawn(PbrBundle {
+                    parent.spawn_bundle(PbrBundle {
                         mesh: load_context.get_handle(vox_asset_path),
                         material: load_context.get_handle(material_asset_path),
                         transform: Transform::from_translation(Vec3::new(
