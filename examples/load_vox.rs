@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_vox::*;
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
         .add_plugin(VoxPlugin)
@@ -15,7 +15,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_scene(asset_server.load("2x2x2.vox"));
     commands
         // light
-        .spawn_bundle(LightBundle {
+        .spawn_bundle(PointLightBundle {
             transform: Transform::from_translation(Vec3::new(4.0, 5.0, 4.0)),
             ..Default::default()
         });

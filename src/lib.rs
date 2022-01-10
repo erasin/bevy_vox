@@ -9,7 +9,7 @@ use bevy_asset::AddAsset;
 pub struct VoxPlugin;
 
 impl Plugin for VoxPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.init_asset_loader::<VoxLoader>();
     }
 }
