@@ -17,7 +17,10 @@ use dot_vox::DotVoxData;
 use thiserror::Error;
 
 #[derive(Default)]
-pub struct VoxLoader;
+pub struct VoxLoader {
+    /// MagicaVoxel considers Z as the vertical dimension. Setting this to true will use Y as height
+    pub swap_yz: bool,
+}
 
 impl AssetLoader for VoxLoader {
     fn load<'a>(
@@ -25,7 +28,7 @@ impl AssetLoader for VoxLoader {
         bytes: &'a [u8],
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<()>> {
-        Box::pin(async move { Ok(load_vox(bytes, load_context).await?) })
+        Box::pin(async move { Ok(load_vox(bytes, load_context, self.swap_yz).await?) })
     }
 
     fn extensions(&self) -> &[&str] {
@@ -43,6 +46,7 @@ pub enum VoxError {
 async fn load_vox<'a, 'b>(
     bytes: &'a [u8],
     load_context: &'a mut LoadContext<'b>,
+    swap_yz: bool,
 ) -> Result<(), VoxError> {
     let mut world = World::default();
     // let world_builder = &mut world.build();
@@ -96,13 +100,17 @@ async fn load_vox<'a, 'b>(
                     let material_asset_path =
                         AssetPath::new_ref(load_context.path(), Some(&material_label));
 
+                    let (x, y, z) = if swap_yz {
+                        (vox.x, vox.z, vox.y)
+                    } else {
+                        (vox.x, vox.y, vox.z)
+                    };
+
                     parent.spawn_bundle(PbrBundle {
                         mesh: load_context.get_handle(vox_asset_path),
                         material: load_context.get_handle(material_asset_path),
                         transform: Transform::from_translation(Vec3::new(
-                            vox.x as f32,
-                            vox.y as f32,
-                            vox.z as f32,
+                            x as f32, y as f32, z as f32,
                         )),
                         ..Default::default()
                     });
