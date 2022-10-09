@@ -1,19 +1,17 @@
 use anyhow::Result;
 use bevy_asset::{AssetLoader, AssetPath, LoadContext, LoadedAsset};
-use bevy_ecs::{component::Component, world::World};
-use bevy_math::Vec3;
+use bevy_ecs::world::World;
+use bevy_hierarchy::BuildWorldChildren;
 use bevy_pbr::prelude::{PbrBundle, StandardMaterial};
 use bevy_render::{
     color::Color,
     mesh::{shape::Cube, Mesh},
+    prelude::SpatialBundle,
 };
 use bevy_scene::Scene;
-use bevy_transform::{ 
-    prelude::{GlobalTransform, Transform},
-};
-use bevy_hierarchy::BuildWorldChildren;
+use bevy_transform::prelude::{GlobalTransform, Transform};
 use bevy_utils::BoxedFuture;
-use dot_vox::DotVoxData;
+use dot_vox::{DotVoxData, DEFAULT_PALETTE};
 use thiserror::Error;
 
 #[derive(Default)]
@@ -32,8 +30,7 @@ impl AssetLoader for VoxLoader {
     }
 
     fn extensions(&self) -> &[&str] {
-        static EXTENSIONS: &[&str] = &["vox"];
-        EXTENSIONS
+        &["vox"]
     }
 }
 
@@ -48,9 +45,6 @@ async fn load_vox<'a, 'b>(
     load_context: &'a mut LoadContext<'b>,
     swap_yz: bool,
 ) -> Result<(), VoxError> {
-    let mut world = World::default();
-    // let world_builder = &mut world.build();
-
     let data: DotVoxData = match dot_vox::load_bytes(&bytes) {
         Ok(d) => d,
         Err(e) => {
@@ -60,21 +54,21 @@ async fn load_vox<'a, 'b>(
 
     let size = 1.0;
 
-    let mut color_use: Vec<usize> = Vec::new();
-
-    for model in data.models.iter() {
-        for vox in model.voxels.iter() {
+    let mut colors: Vec<usize> = Vec::new();
+    data.models.iter().for_each(|model| {
+        model.voxels.iter().for_each(|vox| {
             let index = vox.i as usize;
-            if !color_use.contains(&index) {
-                color_use.push(index);
+            if !colors.contains(&index) {
+                colors.push(index);
             }
-        }
-    }
+        });
+    });
 
     for (index, palette) in data.palette.iter().enumerate() {
-        if color_use.contains(&index) {
+        if colors.contains(&index) {
             let color = palette_to_color(*palette);
             let palette_label = palette_label(index);
+
             load_context.set_labeled_asset(
                 &palette_label,
                 LoadedAsset::new(StandardMaterial {
@@ -85,12 +79,13 @@ async fn load_vox<'a, 'b>(
         }
     }
 
-    let mesh: Mesh = Mesh::from(Cube { size });
-    load_context.set_labeled_asset("cube", LoadedAsset::new(mesh));
+    load_context.set_labeled_asset("cube", LoadedAsset::new(Mesh::from(Cube { size })));
 
+    let mut world = World::default();
     for model in data.models.iter() {
         world
             .spawn()
+            .insert_bundle(SpatialBundle::visible_identity())
             .insert_bundle((Transform::identity(), GlobalTransform::identity()))
             .with_children(|parent| {
                 for vox in model.voxels.iter() {
@@ -109,9 +104,7 @@ async fn load_vox<'a, 'b>(
                     parent.spawn_bundle(PbrBundle {
                         mesh: load_context.get_handle(vox_asset_path),
                         material: load_context.get_handle(material_asset_path),
-                        transform: Transform::from_translation(Vec3::new(
-                            x as f32, y as f32, z as f32,
-                        )),
+                        transform: Transform::from_xyz(x as f32, y as f32, z as f32),
                         ..Default::default()
                     });
                 }
@@ -125,6 +118,17 @@ async fn load_vox<'a, 'b>(
 
 fn palette_label(index: usize) -> String {
     format!("palette{}", index)
+}
+
+#[allow(dead_code)]
+fn palette_to_colors(palette: Vec<u32>) -> Vec<Color> {
+    let ps = if palette.is_empty() {
+        DEFAULT_PALETTE.clone()
+    } else {
+        palette
+    };
+
+    ps.iter().map(|p| palette_to_color(*p)).collect()
 }
 
 fn palette_to_color(from: u32) -> Color {

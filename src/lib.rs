@@ -1,7 +1,8 @@
 mod loader;
-pub use loader::*;
 
-use bevy_app::prelude::*;
+pub use loader::VoxLoader;
+
+use bevy_app::{App, Plugin};
 use bevy_asset::AddAsset;
 
 /// Adds support for Vox file loading to Apps
@@ -9,6 +10,12 @@ use bevy_asset::AddAsset;
 pub struct VoxPlugin {
     /// MagicaVoxel considers Z as the vertical dimension. Setting this to true will use Y as height
     pub swap_yz: bool,
+}
+
+impl VoxPlugin {
+    pub fn swap() -> Self {
+        Self { swap_yz: false }
+    }
 }
 
 impl Plugin for VoxPlugin {
