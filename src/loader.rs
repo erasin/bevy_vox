@@ -9,7 +9,7 @@ use bevy_render::{
     prelude::SpatialBundle,
 };
 use bevy_scene::Scene;
-use bevy_transform::prelude::{GlobalTransform, Transform};
+use bevy_transform::prelude::Transform;
 use bevy_utils::BoxedFuture;
 use dot_vox::{DotVoxData, DEFAULT_PALETTE};
 use thiserror::Error;

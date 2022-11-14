@@ -29,20 +29,20 @@ fn main() {
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // add entities to the world
-    commands.spawn_bundle(SceneBundle {
+    commands.spawn(SceneBundle {
         scene: asset_server.load("2x2x2.vox"),
         transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..default()
     });
 
     // light
-    commands.spawn_bundle(PointLightBundle {
+    commands.spawn(PointLightBundle {
         transform: Transform::from_xyz(3.0, 1.2, 2.5),
         ..Default::default()
     });
 
     // camera
-    commands.spawn_bundle(Camera3dBundle {
+    commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(6.0, -6.0, 6.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..Default::default()
     });
