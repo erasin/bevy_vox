@@ -1,6 +1,6 @@
 [package]
 name = "bevy_vox"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["erasin <erasinoo@gmail.com>"]
 edition = "2021"
 description = "Load MagicaVoxel Vox file for bevy engine "
@@ -12,18 +12,18 @@ keywords = ['voxel', 'MagicaVoxel', 'game', 'bevy']
 exclude = ["assets", "examples"]
 
 [dependencies]
-bevy_ecs = { version = "0.9" }
-bevy_app = { version = "0.9" }
-bevy_asset = { version = "0.9" }
-bevy_render = { version = "0.9" }
-bevy_utils = { version = "0.9" }
-bevy_pbr = { version = "0.9" }
-bevy_scene = { version = "0.9" }
-bevy_transform = { version = "0.9" }
-bevy_hierarchy = { version = "0.9" }
-anyhow = "1.0.36"
-thiserror = "1.0.22"
-dot_vox = "4.1.0"
+bevy_ecs = { version = "0.10" }
+bevy_app = { version = "0.10" }
+bevy_asset = { version = "0.10" }
+bevy_render = { version = "0.10" }
+bevy_utils = { version = "0.10" }
+bevy_pbr = { version = "0.10" }
+bevy_scene = { version = "0.10" }
+bevy_transform = { version = "0.10" }
+bevy_hierarchy = { version = "0.10" }
+anyhow = "1.0"
+thiserror = "1.0"
+dot_vox = "4.1"
 
 [dev-dependencies]
-bevy = { version = "0.9" }
+bevy = { version = "0.10" }
