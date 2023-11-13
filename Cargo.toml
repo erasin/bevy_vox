@@ -18,10 +18,10 @@ bench = false
 path = "examples/load_vox.rs"
 
 [dependencies]
-bevy = { version = "0.12.0"}
+bevy = { version = "0.12"}
 anyhow = "1.0.75"
 thiserror = "1.0.50"
 dot_vox = "4.1"
 
 [dev-dependencies]
-bevy = { version = "0.10" }
+bevy = { version = "0.12" }
