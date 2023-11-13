@@ -11,10 +11,8 @@ readme = "README.md"
 keywords = ['voxel', 'MagicaVoxel', 'game', 'bevy']
 exclude = ["assets", "examples"]
 
-[[bin]]
-name = "example"
-test = false
-bench = false
+[[example]]
+name = "load_vox"
 path = "examples/load_vox.rs"
 
 [dependencies]
