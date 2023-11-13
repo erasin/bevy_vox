@@ -5,12 +5,12 @@ fn main() {
     App::new()
         .insert_resource(Msaa::Sample4)
         .add_plugins(DefaultPlugins)
-        .add_plugin(VoxPlugin::default())
+        .add_plugins(VoxPlugin::default())
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 0.5,
         })
-        .add_startup_system(setup)
+        .add_systems(Startup, setup)
         .run();
 }
 

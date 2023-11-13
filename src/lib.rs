@@ -1,9 +1,7 @@
 mod loader;
 
+use bevy::prelude::{App, AssetApp, Plugin};
 pub use loader::VoxLoader;
-
-use bevy_app::{App, Plugin};
-use bevy_asset::AddAsset;
 
 /// Adds support for Vox file loading to Apps
 #[derive(Default)]
@@ -20,7 +18,7 @@ impl VoxPlugin {
 
 impl Plugin for VoxPlugin {
     fn build(&self, app: &mut App) {
-        app.add_asset_loader(VoxLoader {
+        app.register_asset_loader(VoxLoader {
             swap_yz: self.swap_yz,
         });
     }

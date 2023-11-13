@@ -1,16 +1,14 @@
 use anyhow::Result;
-use bevy_asset::{AssetLoader, AssetPath, LoadContext, LoadedAsset};
-use bevy_ecs::world::World;
-use bevy_hierarchy::BuildWorldChildren;
-use bevy_pbr::prelude::{PbrBundle, StandardMaterial};
-use bevy_render::{
-    color::Color,
-    mesh::{shape::Cube, Mesh},
-    prelude::SpatialBundle,
+
+use bevy::{
+    asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext},
+    prelude::{
+        shape::Cube, BuildWorldChildren, Color, Mesh, PbrBundle, SpatialBundle, StandardMaterial,
+        Transform, World,
+    },
+    scene::Scene,
+    utils::BoxedFuture,
 };
-use bevy_scene::Scene;
-use bevy_transform::prelude::Transform;
-use bevy_utils::BoxedFuture;
 use dot_vox::{DotVoxData, DEFAULT_PALETTE};
 use thiserror::Error;
 
@@ -21,12 +19,24 @@ pub struct VoxLoader {
 }
 
 impl AssetLoader for VoxLoader {
+    type Asset = Scene;
+    type Settings = ();
+    type Error = VoxError;
+
     fn load<'a>(
         &'a self,
-        bytes: &'a [u8],
+        reader: &'a mut Reader,
+        _settings: &'a Self::Settings,
         load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<()>> {
-        Box::pin(async move { Ok(load_vox(bytes, load_context, self.swap_yz).await?) })
+    ) -> BoxedFuture<'a, Result<Self::Asset, VoxError>> {
+        Box::pin(async move {
+            let mut bytes = Vec::new();
+            reader
+                .read_to_end(&mut bytes)
+                .await
+                .map_err(|e| VoxError::FailErr(e.to_string()))?;
+            Ok(load_vox(&bytes, load_context, self.swap_yz).await?)
+        })
     }
 
     fn extensions(&self) -> &[&str] {
@@ -44,7 +54,7 @@ async fn load_vox<'a, 'b>(
     bytes: &'a [u8],
     load_context: &'a mut LoadContext<'b>,
     swap_yz: bool,
-) -> Result<(), VoxError> {
+) -> Result<Scene, VoxError> {
     let data: DotVoxData = match dot_vox::load_bytes(&bytes) {
         Ok(d) => d,
         Err(e) => {
@@ -69,17 +79,17 @@ async fn load_vox<'a, 'b>(
             let color = palette_to_color(*palette);
             let palette_label = palette_label(index);
 
-            load_context.set_labeled_asset(
-                &palette_label,
-                LoadedAsset::new(StandardMaterial {
+            load_context.add_labeled_asset(
+                palette_label,
+                StandardMaterial {
                     base_color: color,
                     ..Default::default()
-                }),
+                },
             );
         }
     }
 
-    load_context.set_labeled_asset("cube", LoadedAsset::new(Mesh::from(Cube { size })));
+    load_context.add_labeled_asset("cube".to_owned(), Mesh::from(Cube { size }));
 
     let mut world = World::default();
     for model in data.models.iter() {
@@ -87,12 +97,6 @@ async fn load_vox<'a, 'b>(
             .spawn(SpatialBundle::default())
             .with_children(|parent| {
                 for vox in model.voxels.iter() {
-                    let vox_asset_path = AssetPath::new_ref(load_context.path(), Some("cube"));
-
-                    let material_label = palette_label(vox.i as usize);
-                    let material_asset_path =
-                        AssetPath::new_ref(load_context.path(), Some(&material_label));
-
                     let (x, y, z) = if swap_yz {
                         (vox.x, vox.z, vox.y)
                     } else {
@@ -100,8 +104,8 @@ async fn load_vox<'a, 'b>(
                     };
 
                     parent.spawn(PbrBundle {
-                        mesh: load_context.get_handle(vox_asset_path),
-                        material: load_context.get_handle(material_asset_path),
+                        mesh: load_context.get_label_handle("cube".to_owned()),
+                        material: load_context.get_label_handle(palette_label(vox.i as usize)),
                         transform: Transform::from_xyz(x as f32, y as f32, z as f32),
                         ..Default::default()
                     });
@@ -109,9 +113,7 @@ async fn load_vox<'a, 'b>(
             });
     }
 
-    load_context.set_default_asset(LoadedAsset::new(Scene::new(world)));
-
-    Ok(())
+    Ok(Scene::new(world))
 }
 
 fn palette_label(index: usize) -> String {
