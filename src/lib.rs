@@ -18,6 +18,10 @@ impl VoxPlugin {
 
 impl Plugin for VoxPlugin {
     fn build(&self, app: &mut App) {
+        app.preregister_asset_loader::<VoxLoader>(&["vox"]);
+    }
+
+    fn finish(&self, app: &mut App) {
         app.register_asset_loader(VoxLoader {
             swap_yz: self.swap_yz,
         });

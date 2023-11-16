@@ -35,7 +35,7 @@ impl AssetLoader for VoxLoader {
                 .read_to_end(&mut bytes)
                 .await
                 .map_err(|e| VoxError::FailErr(e.to_string()))?;
-            Ok(load_vox(&bytes, load_context, self.swap_yz).await?)
+            load_vox(&bytes, load_context, self.swap_yz).await
         })
     }
 
@@ -55,7 +55,7 @@ async fn load_vox<'a, 'b>(
     load_context: &'a mut LoadContext<'b>,
     swap_yz: bool,
 ) -> Result<Scene, VoxError> {
-    let data: DotVoxData = match dot_vox::load_bytes(&bytes) {
+    let data: DotVoxData = match dot_vox::load_bytes(bytes) {
         Ok(d) => d,
         Err(e) => {
             return Err(VoxError::FailErr(e.to_string()));
