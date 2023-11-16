@@ -1,6 +1,6 @@
 [package]
 name = "bevy_vox"
-version = "0.8.0"
+version = "0.8.1"
 authors = ["erasin <erasinoo@gmail.com>"]
 edition = "2021"
 description = "Load MagicaVoxel Vox file for bevy engine "
