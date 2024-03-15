@@ -24,7 +24,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     // light
     commands.spawn(PointLightBundle {
-        transform: Transform::from_xyz(3.0, 1.2, 2.5),
+        point_light: PointLight {
+            intensity: 3_000_000.0,
+            ..Default::default()
+        },
+        transform: Transform::from_xyz(3.0, -3.5, 4.5),
         ..Default::default()
     });
 
