@@ -3,8 +3,8 @@ use anyhow::Result;
 use bevy::{
     asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext},
     prelude::{
-        shape::Cube, BuildWorldChildren, Color, Mesh, PbrBundle, SpatialBundle, StandardMaterial,
-        Transform, World,
+        BuildWorldChildren, Color, Cuboid, Mesh, PbrBundle, SpatialBundle, StandardMaterial,
+        Transform, Vec3, World,
     },
     scene::Scene,
     utils::BoxedFuture,
@@ -62,7 +62,7 @@ async fn load_vox<'a, 'b>(
         }
     };
 
-    let size = 1.0;
+    let size = Vec3::splat(1.0);
 
     let mut colors: Vec<usize> = Vec::new();
     data.models.iter().for_each(|model| {
@@ -89,7 +89,7 @@ async fn load_vox<'a, 'b>(
         }
     }
 
-    load_context.add_labeled_asset("cube".to_owned(), Mesh::from(Cube { size }));
+    load_context.add_labeled_asset("cube".to_owned(), Mesh::from(Cuboid::from_size(size)));
 
     let mut world = World::default();
     for model in data.models.iter() {
