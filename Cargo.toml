@@ -16,10 +16,9 @@ name = "load_vox"
 path = "examples/load_vox.rs"
 
 [dependencies]
-bevy = { version = "0.13", default-features = false, features = ["bevy_asset", "bevy_scene","bevy_pbr"] }
-anyhow = "1"
+bevy = { version = "0.14", default-features = false, features = ["bevy_asset", "bevy_scene","bevy_pbr"] }
 thiserror = "1"
-dot_vox = "4.1"
+dot_vox = "5.1"
 
 [dev-dependencies]
-bevy = { version = "0.13" }
+bevy = { version = "0.14" }

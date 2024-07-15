@@ -1,15 +1,16 @@
-use anyhow::Result;
-
 use bevy::{
     asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext},
-    prelude::{
-        BuildWorldChildren, Color, Cuboid, Mesh, PbrBundle, SpatialBundle, StandardMaterial,
-        Transform, Vec3, World,
-    },
+    color::Color,
+    hierarchy::BuildWorldChildren,
+    math::Vec3,
+    pbr::{PbrBundle, StandardMaterial},
+    prelude::{Cuboid, SpatialBundle, World},
+    render::mesh::Mesh,
     scene::Scene,
-    utils::BoxedFuture,
+    transform::components::Transform,
+    utils::HashSet,
 };
-use dot_vox::{DotVoxData, DEFAULT_PALETTE};
+use dot_vox::{DotVoxData, Voxel};
 use thiserror::Error;
 
 #[derive(Default)]
@@ -23,20 +24,15 @@ impl AssetLoader for VoxLoader {
     type Settings = ();
     type Error = VoxError;
 
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut Reader,
+        reader: &'a mut Reader<'_>,
         _settings: &'a Self::Settings,
-        load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<Self::Asset, VoxError>> {
-        Box::pin(async move {
-            let mut bytes = Vec::new();
-            reader
-                .read_to_end(&mut bytes)
-                .await
-                .map_err(|e| VoxError::FailErr(e.to_string()))?;
-            load_vox(&bytes, load_context, self.swap_yz).await
-        })
+        load_context: &'a mut LoadContext<'_>,
+    ) -> Result<Self::Asset, VoxError> {
+        let mut bytes = Vec::new();
+        reader.read_to_end(&mut bytes).await?;
+        load_vox(&bytes, load_context, self.swap_yz).await
     }
 
     fn extensions(&self) -> &[&str] {
@@ -46,6 +42,9 @@ impl AssetLoader for VoxLoader {
 
 #[derive(Error, Debug)]
 pub enum VoxError {
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
     #[error("Invalid Vox file: {0}")]
     FailErr(String),
 }
@@ -62,23 +61,27 @@ async fn load_vox<'a, 'b>(
         }
     };
 
-    let size = Vec3::splat(1.0);
+    let colors: Vec<usize> = data
+        .models
+        .iter()
+        .flat_map(|model| {
+            model
+                .voxels
+                .iter()
+                .map(|&voxel| voxel.i as usize)
+                .collect::<Vec<usize>>()
+        })
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect();
 
-    let mut colors: Vec<usize> = Vec::new();
-    data.models.iter().for_each(|model| {
-        model.voxels.iter().for_each(|vox| {
-            let index = vox.i as usize;
-            if !colors.contains(&index) {
-                colors.push(index);
-            }
-        });
-    });
-
-    for (index, palette) in data.palette.iter().enumerate() {
-        if colors.contains(&index) {
-            let color = palette_to_color(*palette);
+    data.palette
+        .iter()
+        .enumerate()
+        .filter(|(index, _palette)| colors.contains(index))
+        .for_each(|(index, palette)| {
+            let color = VoxColor::from(*palette).into();
             let palette_label = palette_label(index);
-
             load_context.add_labeled_asset(
                 palette_label,
                 StandardMaterial {
@@ -86,9 +89,9 @@ async fn load_vox<'a, 'b>(
                     ..Default::default()
                 },
             );
-        }
-    }
+        });
 
+    let size = Vec3::splat(1.0);
     load_context.add_labeled_asset("cube".to_owned(), Mesh::from(Cuboid::from_size(size)));
 
     let mut world = World::default();
@@ -96,17 +99,17 @@ async fn load_vox<'a, 'b>(
         world
             .spawn(SpatialBundle::default())
             .with_children(|parent| {
-                for vox in model.voxels.iter() {
-                    let (x, y, z) = if swap_yz {
-                        (vox.x, vox.z, vox.y)
-                    } else {
-                        (vox.x, vox.y, vox.z)
-                    };
+                for &vox in model.voxels.iter() {
+                    let mut vt: VoxelTransform = vox.into();
+                    if swap_yz {
+                        vt.swap_yz();
+                    }
 
                     parent.spawn(PbrBundle {
                         mesh: load_context.get_label_handle("cube".to_owned()),
+                        // mesh: mesh,
                         material: load_context.get_label_handle(palette_label(vox.i as usize)),
-                        transform: Transform::from_xyz(x as f32, y as f32, z as f32),
+                        transform: vt.into(),
                         ..Default::default()
                     });
                 }
@@ -119,30 +122,48 @@ async fn load_vox<'a, 'b>(
 fn palette_label(index: usize) -> String {
     format!("palette{}", index)
 }
+/// Voxel Color <-----> Bevy Color
+struct VoxColor(bevy::color::Srgba);
 
-#[allow(dead_code)]
-fn palette_to_colors(palette: Vec<u32>) -> Vec<Color> {
-    let ps = if palette.is_empty() {
-        DEFAULT_PALETTE.clone()
-    } else {
-        palette
-    };
-
-    ps.iter().map(|p| palette_to_color(*p)).collect()
+impl From<dot_vox::Color> for VoxColor {
+    fn from(value: dot_vox::Color) -> Self {
+        VoxColor(bevy::color::Srgba::rgba_u8(
+            value.r, value.g, value.b, value.a,
+        ))
+    }
 }
 
-fn palette_to_color(from: u32) -> Color {
-    let (a, b, g, r) = (
-        from >> 24u32 & 0xFF,
-        from >> 16u32 & 0xFF,
-        from >> 8u32 & 0xFF,
-        from & 0xFF,
-    );
+impl From<VoxColor> for Color {
+    fn from(val: VoxColor) -> Self {
+        val.0.into()
+    }
+}
 
-    Color::rgba(
-        r as f32 / 255.0,
-        g as f32 / 255.0,
-        b as f32 / 255.0,
-        a as f32 / 255.0,
-    )
+/// Voxel Pos <----> Bevy Transform
+struct VoxelTransform {
+    x: u8,
+    y: u8,
+    z: u8,
+}
+
+impl VoxelTransform {
+    fn swap_yz(&mut self) {
+        (self.y, self.z) = (self.z, self.y);
+    }
+}
+
+impl From<Voxel> for VoxelTransform {
+    fn from(value: Voxel) -> Self {
+        Self {
+            x: value.x,
+            y: value.y,
+            z: value.z,
+        }
+    }
+}
+
+impl From<VoxelTransform> for Transform {
+    fn from(val: VoxelTransform) -> Self {
+        Transform::from_xyz(val.x as f32, val.y as f32, val.z as f32)
+    }
 }
