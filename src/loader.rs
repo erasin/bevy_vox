@@ -1,10 +1,9 @@
 use bevy::{
-    asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext},
+    asset::{io::Reader, AssetLoader, LoadContext},
     color::Color,
-    hierarchy::BuildWorldChildren,
     math::Vec3,
-    pbr::{PbrBundle, StandardMaterial},
-    prelude::{Cuboid, SpatialBundle, World},
+    pbr::{MeshMaterial3d, StandardMaterial},
+    prelude::{BuildChildren, ChildBuild, Cuboid, Mesh3d, Visibility, World},
     render::mesh::Mesh,
     scene::Scene,
     transform::components::Transform,
@@ -24,11 +23,11 @@ impl AssetLoader for VoxLoader {
     type Settings = ();
     type Error = VoxError;
 
-    async fn load<'a>(
-        &'a self,
-        reader: &'a mut Reader<'_>,
-        _settings: &'a Self::Settings,
-        load_context: &'a mut LoadContext<'_>,
+    async fn load(
+        &self,
+        reader: &mut dyn Reader,
+        _settings: &Self::Settings,
+        load_context: &mut LoadContext<'_>,
     ) -> Result<Self::Asset, VoxError> {
         let mut bytes = Vec::new();
         reader.read_to_end(&mut bytes).await?;
@@ -97,7 +96,7 @@ async fn load_vox<'a, 'b>(
     let mut world = World::default();
     for model in data.models.iter() {
         world
-            .spawn(SpatialBundle::default())
+            .spawn((Transform::default(), Visibility::default()))
             .with_children(|parent| {
                 for &vox in model.voxels.iter() {
                     let mut vt: VoxelTransform = vox.into();
@@ -105,13 +104,14 @@ async fn load_vox<'a, 'b>(
                         vt.swap_yz();
                     }
 
-                    parent.spawn(PbrBundle {
-                        mesh: load_context.get_label_handle("cube".to_owned()),
+                    parent.spawn((
+                        Mesh3d(load_context.get_label_handle("cube".to_owned())),
                         // mesh: mesh,
-                        material: load_context.get_label_handle(palette_label(vox.i as usize)),
-                        transform: vt.into(),
-                        ..Default::default()
-                    });
+                        MeshMaterial3d::<StandardMaterial>(
+                            load_context.get_label_handle(palette_label(vox.i as usize)),
+                        ),
+                        Transform::from(vt),
+                    ));
                 }
             });
     }
