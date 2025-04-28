@@ -3,11 +3,11 @@ use bevy::{
     color::Color,
     math::Vec3,
     pbr::{MeshMaterial3d, StandardMaterial},
-    prelude::{BuildChildren, ChildBuild, Cuboid, Mesh3d, Visibility, World},
+    platform::collections::HashSet,
+    prelude::{Cuboid, Mesh3d, Visibility, World},
     render::mesh::Mesh,
     scene::Scene,
     transform::components::Transform,
-    utils::HashSet,
 };
 use dot_vox::{DotVoxData, Voxel};
 use thiserror::Error;

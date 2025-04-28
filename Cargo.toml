@@ -1,6 +1,6 @@
 [package]
 name = "bevy_vox"
-version = "0.15.0"
+version = "0.16.0"
 authors = ["erasin <erasinoo@gmail.com>"]
 edition = "2021"
 description = "Load MagicaVoxel Vox file for bevy engine "
@@ -16,9 +16,9 @@ name = "load_vox"
 path = "examples/load_vox.rs"
 
 [dependencies]
-bevy = { version = "0.15", default-features = false, features = ["bevy_asset", "bevy_scene","bevy_pbr"] }
+bevy = { version = "0.16", default-features = false, features = ["bevy_asset", "bevy_scene","bevy_pbr"] }
 thiserror = "1"
 dot_vox = "5.1"
 
 [dev-dependencies]
-bevy = { version = "0.15" }
+bevy = { version = "0.16" }
