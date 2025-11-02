@@ -2,10 +2,10 @@ use bevy::{
     asset::{io::Reader, AssetLoader, LoadContext},
     color::Color,
     math::Vec3,
+    mesh::Mesh,
     pbr::{MeshMaterial3d, StandardMaterial},
     platform::collections::HashSet,
     prelude::{Cuboid, Mesh3d, Visibility, World},
-    render::mesh::Mesh,
     scene::Scene,
     transform::components::Transform,
 };
