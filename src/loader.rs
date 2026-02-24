@@ -6,13 +6,14 @@ use bevy::{
     pbr::{MeshMaterial3d, StandardMaterial},
     platform::collections::HashSet,
     prelude::{Cuboid, Mesh3d, Visibility, World},
+    reflect::TypePath,
     scene::Scene,
     transform::components::Transform,
 };
 use dot_vox::{DotVoxData, Voxel};
 use thiserror::Error;
 
-#[derive(Default)]
+#[derive(TypePath, Default)]
 pub struct VoxLoader {
     /// MagicaVoxel considers Z as the vertical dimension. Setting this to true will use Y as height
     pub swap_yz: bool,

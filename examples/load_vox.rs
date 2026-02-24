@@ -5,7 +5,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(VoxPlugin { swap_yz: true })
-        .insert_resource(AmbientLight {
+        .insert_resource(GlobalAmbientLight {
             color: Color::WHITE,
             brightness: 0.5,
             affects_lightmapped_meshes: true,
