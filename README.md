@@ -2,8 +2,7 @@ Load MagicaVoxel Vox file for [bevy](https://github.com/bevyengine/bevy/) engine
 
 | bevy_vox | bevy  |
 | -------- | ----- |
-| 0.15     | 0.15  | 
-| 0.10     | 0.14  |
+| 0.18     | 0.18  | 
 
 **Example**
 
